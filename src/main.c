@@ -4,8 +4,8 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <3ds.h>
 #include <string.h>
+#include <3ds.h>
 #include "globals.h"
 #include "http.h"
 #include "save.h"
@@ -101,7 +101,9 @@ Result getProgramID(u64* id)
     Result ret = APT_GetProgramID(id);
     if(R_FAILED(ret))
         snprintf(status, sizeof(status) - 1, "An error occured! Failed to get the program ID for the current process.\n    Error code: %08lX", ret);
-
+    else
+        snprintf(status, sizeof(status) - 1, "%08llX", *id);
+        
     return ret;
 }
 
@@ -113,6 +115,8 @@ Result getGameVersion(u64 program_id, char* gameversion, u16* gameversion_id)
 
     u64 update_program_id = 0;
     if(((program_id >> 32) & 0xFFFF) == 0) update_program_id = program_id | 0x0000000E00000000ULL;
+
+    snprintf(status, sizeof(status) - 1, "%08llX", update_program_id);
 
     if(update_program_id)
     {
@@ -136,10 +140,15 @@ Result getGameVersion(u64 program_id, char* gameversion, u16* gameversion_id)
             }
             else
             {
-                snprintf(status, sizeof(status) - 1, "Unsupported game version detected, please try again with a supported version.\n    Supported version : 1.0 / 1.4\n");
+                snprintf(status, sizeof(status) - 1, "Unsupported game version detected, please try again with a supported version.\n    Supported versions: 1.0 / 1.4\n");
                 return ret;
             }
         }
+    }
+    else
+    {
+        snprintf(status, sizeof(status) - 1, "No supported game detected.\n    This installer only works with Pokemon OR / AS.\n");
+        return -1;
     }
 
     return 0;
@@ -190,10 +199,10 @@ int main()
             switch(next_state)
             {
                 case STATE_INITIALIZE:
-                    strncat(top_text, "Initializing...please wait...\n\n", sizeof(top_text) - 1);
+                    strncat(top_text, "Initializing, please wait...\n\n", sizeof(top_text) - 1);
                     break;
                 case STATE_INITIAL:
-                    strcat(top_text, "Welcome to the (quite dirty) basehaxx installer!\nPlease proceed with caution, as you might lose data if you don't.You may press START at any time to return to menu.\nThanks to smealum and SALT team for the installer code base!\n                           Press A to continue.\n\n");
+                    strcat(top_text, "Welcome to the (quite dirty) basehaxx installer!\nPlease proceed with caution, as you might lose\ndata if you don't.\nThanks to smealum and SALT team for the installer code base!\n\nPress START at any time to exit.\n\n");
                     snprintf(top_text_tmp, sizeof(top_text_tmp) - 1, "Pokemon %s version %s detected\nPress A to continue.\n\n", gametitle, gameversion);
                     break;
                 case STATE_SELECT_FIRMWARE:
@@ -206,10 +215,10 @@ int main()
                     strcat(top_text, "Installing payload...\n");
                     break;
                 case STATE_INSTALLED_PAYLOAD:
-                    strcat(top_text, "Done ! basehaxx was successfully installed.");
+                    strcat(top_text, "Done! basehaxx was successfully installed.");
                     break;
                 case STATE_ERROR:
-                    strcat(top_text, "Looks like something went wrong. :(\n");
+                    strcat(top_text, "Looks like something went wrong. :(\nSee bottom screen for more info.\nPress START to exit.\n");
                     break;
                 default:
                     break;
@@ -329,7 +338,8 @@ int main()
                 Result ret = read_savedata("/main", &buffer, &size);
                 if(ret)
                 {
-                    sprintf(status, "An error occured! Failed to embed payload\n    Error code: %08lX", ret);
+                    strcat(status, "\n    Error: Failed to embed payload.\n    Error code: %08lX");
+                    sprintf(status, status, ret);
                     next_state = STATE_ERROR;
                     break;
                 }
@@ -337,7 +347,7 @@ int main()
                 ret = romfsInit();
                 if(R_FAILED(ret))
                 {
-                    snprintf(status, sizeof(status) - 1, "An error occured! Failed to initialize romfs for this application (romfsInit()).\n    Error code: %08lX", ret);
+                    snprintf(status, sizeof(status) - 1, "Error: Failed to initialize romfs for this application (romfsInit()).\n    Error code: %08lX", ret);
                     next_state = STATE_ERROR;
                     break;
                 }
@@ -374,7 +384,7 @@ int main()
 
                 if(ret)
                 {
-                    sprintf(status, "An error occured! Failed to install payload\n    Error code: %08lX", ret);
+                    sprintf(status, "Error: Failed to install payload\n    Error code: %08lX", ret);
                     next_state = STATE_ERROR;
                     break;
                 }

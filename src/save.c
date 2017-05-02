@@ -81,7 +81,7 @@ Result read_savedata(const char* path, void** data, size_t* size)
     fsEndUseSession();
     if(fail)
     {
-        sprintf(status, "An error occured! Failed to read file: %d\n     %08lX %08lX", fail, ret, bytes_read);
+        sprintf(status, "Error: Failed to read file: %d\n     %08lX %08lX", fail, ret, bytes_read);
         if(buffer) free(buffer);
     }
     else
